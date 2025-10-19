@@ -1,30 +1,38 @@
-// Jenkinsfile: Define the stages of your CI/CD pipeline
 pipeline {
-    agent any 
-
+    agent any
+    
     stages {
-        stage('Checkout Code') {
+        stage('Checkout') {
             steps {
-                // This step automatically checks out the code from the repository
-                echo 'Code successfully checked out.'
+                echo "Code checked out from repository."
             }
         }
-        stage('Build Application') {
+        stage('Install Webserver & Dependencies') {
             steps {
-                // REPLACE with your actual build command (e.g., 'mvn clean install' for Java/Maven)
-                sh 'echo "Running application build command..."'
+                // Install Apache2 and PHP on the EC2 instance
+                sh """
+                sudo apt update -y
+                sudo apt install -y apache2 php libapache2-mod-php
+                sudo systemctl start apache2
+                sudo systemctl enable apache2
+                """
+                echo "Apache2 and PHP are installed."
             }
         }
-        stage('Run Tests') {
+        stage('Deploy Application') {
             steps {
-                // REPLACE with your actual test command (e.g., 'mvn test' or 'npm test')
-                sh 'echo "Running unit tests..."'
+                // Copy the index.php file to the Apache web root
+                // NOTE: This assumes Jenkins user has sudo permissions configured or you use SCP/SSH for deployment.
+                sh 'sudo cp index.php /var/www/html/index.php'
+                echo "Web page deployed to /var/www/html/."
             }
         }
-        stage('Prepare Artifact') {
-            steps {
-                // This is where you might archive the WAR/JAR/Docker image
-                echo 'Build artifact prepared.'
+        stage('Post-Deployment Verification') {
+             steps {
+                // Wait for the web server to fully load the page
+                sleep 5
+                // You would add Selenium IDE or manual test steps here.
+                echo "Deployment verification complete. Check http://YOUR_EC2_IP"
             }
         }
     }
